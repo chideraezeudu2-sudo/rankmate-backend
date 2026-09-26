@@ -1,0 +1,13 @@
+{
+  "_comment": "Route by task, not by feature. Cheap tier for mechanical work, quality tier only where the output is customer-visible or poisons everything downstream.",
+  "business_profile": { "provider": "groq", "model": "llama-3.3-70b-versatile", "tier": "quality" },
+  "technical_fix": { "provider": "groq", "model": "llama-3.1-8b-instant", "tier": "cheap" },
+  "page_rewrite": { "provider": "groq", "model": "llama-3.3-70b-versatile", "tier": "cheap" },
+  "internal_linking": { "provider": "groq", "model": "llama-3.1-8b-instant", "tier": "cheap" },
+  "activity_feed_text": { "provider": "groq", "model": "llama-3.1-8b-instant", "tier": "cheap" },
+  "article_generation": { "provider": "openai", "model": "gpt-5-mini", "tier": "quality" },
+  "geo_presence_extraction": { "provider": "groq", "model": "llama-3.1-8b-instant", "tier": "cheap" },
+  "geo_query_openai": { "provider": "openai", "model": "gpt-5-mini", "tier": "geo" },
+  "geo_query_anthropic": { "provider": "anthropic", "model": "claude-haiku-4-5", "tier": "geo" },
+  "geo_query_perplexity": { "provider": "perplexity", "model": "sonar", "tier": "geo" }
+}
