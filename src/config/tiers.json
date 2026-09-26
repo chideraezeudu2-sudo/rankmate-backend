@@ -1,0 +1,30 @@
+{
+  "trial": {
+    "pages_optimized_cap": 15,
+    "articles_published_cap": 3,
+    "geo_queries": 5,
+    "geo_providers": ["openai", "anthropic"],
+    "competitor_cadence_days": null
+  },
+  "starter": {
+    "pages_optimized_cap": 20,
+    "articles_published_cap": 4,
+    "geo_queries": 5,
+    "geo_providers": ["openai", "anthropic"],
+    "competitor_cadence_days": null
+  },
+  "growth": {
+    "pages_optimized_cap": 75,
+    "articles_published_cap": 15,
+    "geo_queries": 20,
+    "geo_providers": ["openai", "anthropic", "perplexity"],
+    "competitor_cadence_days": 7
+  },
+  "scale": {
+    "pages_optimized_cap": null,
+    "articles_published_cap": null,
+    "geo_queries": 40,
+    "geo_providers": ["openai", "anthropic", "perplexity"],
+    "competitor_cadence_days": 1
+  }
+}
