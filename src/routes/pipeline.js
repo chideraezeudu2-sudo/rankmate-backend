@@ -3,6 +3,7 @@ import { runDailyCycle } from '../services/orchestrator.js';
 import { runWeeklyGeoRefresh, getGeoTrend } from '../services/geoTracker.js';
 import { addCompetitorWatch, checkCompetitors } from '../services/competitorMonitor.js';
 import { db } from '../db/client.js';
+import tiers from '../config/tiers.json' with { type: 'json' };
 
 export const pipelineRouter = express.Router();
 
@@ -25,6 +26,9 @@ pipelineRouter.post('/:id/run-daily', async (req, res) => {
 pipelineRouter.post('/:id/geo/refresh', async (req, res) => {
   try {
     const plan = await planFor(req.params.id);
+    if (!tiers[plan]?.geo_enabled) {
+      return res.status(402).json({ error: 'GEO / AI-search visibility is available on Growth and Scale plans only' });
+    }
     const result = await runWeeklyGeoRefresh(req.params.id, plan);
     res.json(result);
   } catch (err) {

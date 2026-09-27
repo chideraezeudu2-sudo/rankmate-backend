@@ -46,6 +46,11 @@ which competitor brands are also mentioned. Respond ONLY with valid JSON:
  */
 export async function runWeeklyGeoRefresh(siteId, plan = 'trial') {
   const config = tiers[plan] ?? tiers.trial;
+  // HARD GATE: GEO is paid-only. Trial/Starter must never trigger provider spend,
+  // even if a caller forgets to check. Trial signup is open, so this is a hard ceiling.
+  if (!config.geo_enabled || !config.geo_providers?.length) {
+    return { skipped: true, reason: `geo not available on plan '${plan}'` };
+  }
   const profile = await getBusinessProfile(siteId);
   if (!profile) return { skipped: true, reason: 'no business profile yet' };
 
