@@ -67,3 +67,26 @@ npm start
 ## Env vars needed
 See `.env.example`. `SUPABASE_URL` is already filled in; everything else needs a real key
 pasted directly into Render's environment settings once the service exists — never into chat.
+
+## Running autonomously (cron)
+The pipeline is triggered by cron, not by the founder. `src/routes/cron.js` exposes:
+
+| Endpoint | Cadence | What it does |
+|---|---|---|
+| `POST /cron/daily` | daily | crawl due pages → technical fixes → optimize → gap-driven content → link → competitor checks |
+| `POST /cron/geo` | weekly | GEO sweep (**paid plans only**); skips sites already snapshotted this week |
+| `POST /cron/competitors` | daily | competitor sweep, per-plan cadence (Starter biweekly / Growth weekly / Scale daily) |
+
+All three require `CRON_SECRET` in an `Authorization: Bearer <secret>` header. If
+`CRON_SECRET` is unset in production the endpoints return **503** rather than running
+open — they trigger real provider spend, so they fail closed.
+
+Locally, if `NODE_ENV` is not production the secret check is skipped for convenience.
+
+Verify the gate without spending anything:
+
+```bash
+curl -X POST $URL/cron/geo -H "Authorization: Bearer $CRON_SECRET"
+# trial/unpaid sites come back as {"skipped":true,"reason":"geo not on this plan"}
+```
+

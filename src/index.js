@@ -2,6 +2,7 @@ import express from 'express';
 import { sitesRouter } from './routes/sites.js';
 import { pipelineRouter } from './routes/pipeline.js';
 import { billingRouter } from './routes/billing.js';
+import { cronRouter } from './routes/cron.js';
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json({ limit: '2mb' }));
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/sites', sitesRouter);
 app.use('/sites', pipelineRouter);
+app.use('/cron', cronRouter);
 
 const port = process.env.PORT || 10000;
 app.listen(port, () => console.log(`rankmate-backend listening on :${port}`));
