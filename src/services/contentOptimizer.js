@@ -2,13 +2,16 @@ import { db } from '../db/client.js';
 import { runTask } from '../lib/modelRouter.js';
 import { logActivity } from './activityFeed.js';
 import tiers from '../config/tiers.json' with { type: 'json' };
+import { capWindowStart, trialWindowExpired } from '../lib/periods.js';
 
-/** Counts how many distinct pages already have at least one optimization logged. */
-async function countOptimizedPages(siteId) {
+/** Counts distinct pages optimized since the plan's cap window opened. */
+async function countOptimizedPages(siteId, plan) {
+  const since = await capWindowStart(siteId, plan);
   const { data, error } = await db
     .from('page_optimizations')
-    .select('page_id, pages!inner(site_id)')
-    .eq('pages.site_id', siteId);
+    .select('page_id, created_at, pages!inner(site_id)')
+    .eq('pages.site_id', siteId)
+    .gte('created_at', since);
   if (error) throw error;
   return new Set(data.map((r) => r.page_id)).size;
 }
@@ -19,9 +22,13 @@ async function countOptimizedPages(siteId) {
  * This is the "we clearly did something" proof the trial leans on.
  */
 export async function optimizePage(page, crawlResult, plan = 'trial') {
+  if (plan === 'trial' && (await trialWindowExpired(page.site_id))) {
+    return { skipped: true, reason: 'trial window has ended' };
+  }
+
   const cap = tiers[plan]?.pages_optimized_cap;
   if (cap !== null && cap !== undefined) {
-    const already = await countOptimizedPages(page.site_id);
+    const already = await countOptimizedPages(page.site_id, plan);
     if (already >= cap) return { skipped: true, reason: `plan cap of ${cap} pages reached` };
   }
 

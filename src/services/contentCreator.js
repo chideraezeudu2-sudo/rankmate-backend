@@ -3,6 +3,7 @@ import { runTask } from '../lib/modelRouter.js';
 import { logActivity } from './activityFeed.js';
 import { getBusinessProfile } from './intelligenceEngine.js';
 import tiers from '../config/tiers.json' with { type: 'json' };
+import { capWindowStart, trialWindowExpired } from '../lib/periods.js';
 
 const GAP_SYSTEM_PROMPT = `You are Rankmate's content strategist. Given a business profile and a list of pages
 the site already has, propose content gaps worth filling — comparison pages, "alternative to X" pages, and
@@ -41,14 +42,24 @@ no claims the business profile doesn't support. Plain markdown, start with an H1
  * adapter here once you decide which platform(s) to support first.
  */
 export async function runContentGapPipeline(siteId, plan = 'trial') {
+  if (plan === 'trial' && (await trialWindowExpired(siteId))) {
+    return { skipped: true, reason: 'trial window has ended' };
+  }
+
   const cap = tiers[plan]?.articles_published_cap;
-  if (cap !== null && cap !== undefined) {
-    const { count, error: countErr } = await db
-      .from('content_pieces')
-      .select('id', { count: 'exact', head: true })
-      .eq('site_id', siteId);
-    if (countErr) throw countErr;
-    if (count >= cap) return { skipped: true, reason: `plan cap of ${cap} articles reached` };
+  // Generation is what costs money, so the cap counts pieces created in the
+  // window rather than pieces marked published. Once a publish adapter exists,
+  // revisit whether 'published' is the right thing to meter.
+  const since = await capWindowStart(siteId, plan);
+  const { count, error: countErr } = await db
+    .from('content_pieces')
+    .select('id', { count: 'exact', head: true })
+    .eq('site_id', siteId)
+    .gte('created_at', since);
+  if (countErr) throw countErr;
+
+  if (cap !== null && cap !== undefined && count >= cap) {
+    return { skipped: true, reason: `plan cap of ${cap} articles reached` };
   }
 
   const profile = await getBusinessProfile(siteId);
@@ -57,7 +68,9 @@ export async function runContentGapPipeline(siteId, plan = 'trial') {
   const { data: pages, error: pagesErr } = await db.from('pages').select('url').eq('site_id', siteId);
   if (pagesErr) throw pagesErr;
 
-  const remainingSlots = cap ? cap - (await db.from('content_pieces').select('id', { count: 'exact', head: true }).eq('site_id', siteId)).count : 3;
+  // Scale has no article cap, so it gets a per-cycle batch size instead of a
+  // remaining-slot count.
+  const remainingSlots = cap === null || cap === undefined ? 3 : cap - count;
   const gaps = await findContentGaps(profile, pages.map((p) => p.url), Math.max(1, remainingSlots));
 
   const drafted = [];
