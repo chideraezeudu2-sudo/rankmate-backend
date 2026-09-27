@@ -1,5 +1,6 @@
 {
   "trial": {
+    "monthly_price_usd": 0,
     "pages_optimized_cap": 15,
     "articles_published_cap": 3,
     "geo_queries": 0,
@@ -8,6 +9,7 @@
     "geo_enabled": false
   },
   "starter": {
+    "monthly_price_usd": 29,
     "pages_optimized_cap": 20,
     "articles_published_cap": 4,
     "geo_queries": 0,
@@ -16,6 +18,7 @@
     "geo_enabled": false
   },
   "growth": {
+    "monthly_price_usd": 59,
     "pages_optimized_cap": 75,
     "articles_published_cap": 15,
     "geo_queries": 20,
@@ -28,6 +31,7 @@
     "geo_enabled": true
   },
   "scale": {
+    "monthly_price_usd": 149,
     "pages_optimized_cap": null,
     "articles_published_cap": null,
     "geo_queries": 40,
