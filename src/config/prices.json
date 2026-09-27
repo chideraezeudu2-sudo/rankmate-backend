@@ -1,0 +1,6 @@
+{
+  "$comment": "Maps each plan to its Stripe monthly Price ID. Editable without code changes - swap these for test-mode price IDs to run against Stripe test mode, or for new prices if the tiers are repriced.",
+  "starter": "price_1UKM0nDdEx3FG9TjiPno8X6j",
+  "growth": "price_1UKM0oDdEx3FG9Tj2EQfsSFq",
+  "scale": "price_1UKM0oDdEx3FG9TjWmEf0Two"
+}

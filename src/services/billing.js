@@ -1,14 +1,22 @@
 import Stripe from 'stripe';
 import { db } from '../db/client.js';
+import prices from '../config/prices.json' with { type: 'json' };
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
-// Fill these in with real Stripe Price IDs once the products exist in the Stripe dashboard.
-export const PRICE_TO_PLAN = {
-  price_starter_placeholder: 'starter',
-  price_growth_placeholder: 'growth',
-  price_scale_placeholder: 'scale',
-};
+/**
+ * Plan for a given Stripe Price ID, derived from config/prices.json (plan ->
+ * price). Inverted here so webhook handling can look up by price ID.
+ */
+export const PRICE_TO_PLAN = Object.fromEntries(
+  Object.entries(prices)
+    .filter(([key]) => !key.startsWith('$'))
+    .map(([plan, priceId]) => [priceId, plan]),
+);
+
+export function priceIdForPlan(plan) {
+  return prices[plan] ?? null;
+}
 
 export async function createCheckoutSession({ accountId, priceId, successUrl, cancelUrl }) {
   if (!stripe) throw new Error('STRIPE_SECRET_KEY not set');
@@ -24,6 +32,40 @@ export async function createCheckoutSession({ accountId, priceId, successUrl, ca
     metadata: { account_id: accountId },
   });
   return session;
+}
+
+/**
+ * Stripe billing portal for managing/cancelling a subscription. Requires the
+ * account to already have a stripe_customer_id (set on first checkout).
+ */
+export async function createPortalSession({ accountId, returnUrl }) {
+  if (!stripe) throw new Error('STRIPE_SECRET_KEY not set');
+  const { data: account } = await db.from('accounts').select('*').eq('id', accountId).single();
+  if (!account) throw new Error('account not found');
+  if (!account.stripe_customer_id) throw new Error('no subscription yet - check out first');
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: account.stripe_customer_id,
+    return_url: returnUrl,
+  });
+  return session;
+}
+
+/**
+ * The account's current plan plus the caps that plan enforces, so the frontend
+ * can show usage without duplicating the tier table.
+ */
+export async function getAccountTier(accountId, tiers) {
+  const { data: account, error } = await db
+    .from('accounts')
+    .select('id, email, plan, stripe_customer_id')
+    .eq('id', accountId)
+    .single();
+  if (error) throw error;
+
+  const plan = account.plan ?? 'trial';
+  const config = tiers[plan] ?? tiers.trial;
+  return { account, plan, caps: config };
 }
 
 /**
