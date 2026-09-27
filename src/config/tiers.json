@@ -2,29 +2,41 @@
   "trial": {
     "pages_optimized_cap": 15,
     "articles_published_cap": 3,
-    "geo_queries": 5,
-    "geo_providers": ["openai", "anthropic"],
-    "competitor_cadence_days": null
+    "geo_queries": 0,
+    "geo_providers": [],
+    "competitor_cadence_days": null,
+    "geo_enabled": false
   },
   "starter": {
     "pages_optimized_cap": 20,
     "articles_published_cap": 4,
-    "geo_queries": 5,
-    "geo_providers": ["openai", "anthropic"],
-    "competitor_cadence_days": null
+    "geo_queries": 0,
+    "geo_providers": [],
+    "competitor_cadence_days": 14,
+    "geo_enabled": false
   },
   "growth": {
     "pages_optimized_cap": 75,
     "articles_published_cap": 15,
     "geo_queries": 20,
-    "geo_providers": ["openai", "anthropic", "perplexity"],
-    "competitor_cadence_days": 7
+    "geo_providers": [
+      "openai",
+      "anthropic",
+      "perplexity"
+    ],
+    "competitor_cadence_days": 7,
+    "geo_enabled": true
   },
   "scale": {
     "pages_optimized_cap": null,
     "articles_published_cap": null,
     "geo_queries": 40,
-    "geo_providers": ["openai", "anthropic", "perplexity"],
-    "competitor_cadence_days": 1
+    "geo_providers": [
+      "openai",
+      "anthropic",
+      "perplexity"
+    ],
+    "competitor_cadence_days": 1,
+    "geo_enabled": true
   }
 }
