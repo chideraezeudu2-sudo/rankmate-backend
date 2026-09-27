@@ -41,15 +41,30 @@ export async function autofixPage(page, crawlResult) {
   const issues = detectIssues(page, crawlResult);
   let fixed = 0;
 
-  for (const issue of issues) {
-    const { data: issueRow, error } = await db
-      .from('technical_issues')
-      .insert({ page_id: page.id, issue_type: issue.issue_type, description: issue.description })
-      .select()
-      .single();
-    if (error) throw error;
+  // Autofix runs on every crawl. Two things stop this from growing one row per
+  // crawl forever: an issue that is still open is updated in place, and an
+  // auto-fixable issue already marked fixed is not re-generated. The latter
+  // matters because a fix records the proposed text but never writes it back to
+  // the customer's site, so the page keeps looking unfixed to the crawler.
+  const { data: allRows } = await db
+    .from('technical_issues')
+    .select('id, issue_type, status')
+    .eq('page_id', page.id);
+  const rowByType = new Map((allRows ?? []).map((r) => [r.issue_type, r]));
 
-    if (AUTO_FIXABLE.has(issue.issue_type)) {
+  for (const issue of issues) {
+    const existing = rowByType.get(issue.issue_type);
+    const fixable = AUTO_FIXABLE.has(issue.issue_type);
+
+    if (existing && existing.status === 'fixed') continue;
+
+    const issueRow = existing ?? (await db
+      .from('technical_issues')
+      .insert({ page_id: page.id, issue_type: issue.issue_type, description: issue.description, status: 'open' })
+      .select()
+      .single()).data;
+
+    if (fixable) {
       const before = issue.issue_type === 'missing_meta_description' ? crawlResult.metaDescription : crawlResult.title;
       const after = await generateFix(issue.issue_type, page, crawlResult);
       const field = issue.issue_type === 'missing_meta_description' ? 'meta_description' : 'title';

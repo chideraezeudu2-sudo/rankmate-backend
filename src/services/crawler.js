@@ -3,7 +3,12 @@ import crypto from 'node:crypto';
 import { db } from '../db/client.js';
 import { logActivity } from './activityFeed.js';
 
-const CRAWL_INTERVAL_HOURS = { critical: 24, standard: 24 * 7, low: 24 * 30 };
+// critical is 23h, not 24: the daily cron fires on a fixed 24h tick, so a page
+// crawled a few seconds late would still be under 24h old at the next tick and
+// get skipped — silently stalling optimization on alternating days. The 1h
+// buffer absorbs that drift. standard/low sit on weekly and monthly ticks with
+// ample margin, so they need no adjustment.
+const CRAWL_INTERVAL_HOURS = { critical: 23, standard: 24 * 7, low: 24 * 30 };
 
 function hashContent(html) {
   return crypto.createHash('sha256').update(html).digest('hex');
