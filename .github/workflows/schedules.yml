@@ -1,0 +1,51 @@
+name: Rankmate scheduled jobs
+
+# Cron for the fleet sweeps. Render cron jobs require a paid plan, so the
+# schedule lives here instead; the job itself runs on the web service.
+#
+# The sweeps hit /cron/* on the API, which is gated by CRON_SECRET. GEO is
+# paid-plans-only and skips trial sites, so running it on a schedule is safe.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # daily  — crawl, technical fixes, optimization, content, linking
+    - cron: "0 7 * * 1"   # weekly (Mon) — GEO sweep, paid plans only
+    - cron: "0 8 * * *"   # daily  — competitor sweep (per-plan cadence applied server-side)
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which sweep to run now
+        type: choice
+        options: [daily, geo, competitors]
+        default: geo
+
+concurrency:
+  group: rankmate-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Scheduled runs carry the cron expression; manual runs carry the input.
+      - name: Decide which job to run
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "job=${{ inputs.job }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 7 * * 1" ]; then
+            echo "job=geo" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 8 * * *" ]; then
+            echo "job=competitors" >> "$GITHUB_OUTPUT"
+          else
+            echo "job=daily" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run sweep
+        run: node scripts/cron.js "${{ steps.pick.outputs.job }}"
+        env:
+          # Public service URL, not sensitive. The secret comes from repo secrets.
+          RANKMATE_API_URL: https://rankmate-backend-x8ly.onrender.com
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
